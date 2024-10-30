@@ -1,68 +1,53 @@
 import streamlit as st
 import requests
-import json
 
-def run_research(company_name, website):
-    WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
-    
+# Streamlit App
+st.title("AI Research Assistant")
+
+# Form for User Input
+with st.form(key='input_form'):
+    company_name = st.text_input("Company Name:")
+    company_website = st.text_input("Company Website:")
+    submit_button = st.form_submit_button(label='Run Research Analysis')
+
+# Function to send data to Make webhook
+def send_to_make_webhook(company_name, company_website):
+    webhook_url = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
+    payload = {
+        "company_name": company_name,
+        "company_website": company_website
+    }
     try:
-        payload = {
-            "company_name": company_name,
-            "website": website
-        }
-        
-        response = requests.post(WEBHOOK_URL, json=payload, headers={"Content-Type": "application/json"})
-        
-        if response.status_code == 200:
-            return response.json()
-        return {"error": f"Error: Status code {response.status_code}"}
-            
+        response = requests.post(webhook_url, json=payload)
+        response.raise_for_status()
+        return response.json()
     except Exception as e:
-        return {"error": str(e)}
+        st.error(f"Error: {str(e)}")
+        return None
 
-st.set_page_config(page_title="Company Research Assistant", layout="wide")
-st.title("Company Research Assistant 🔍")
-
-col1, col2 = st.columns(2)
-with col1:
-    company_name = st.text_input("Company Name", placeholder="Enter company name...")
-with col2:
-    website = st.text_input("Website", placeholder="Enter company website...")
-
-if st.button("Run Research Analysis", type="primary"):
-    if company_name and website:
-        with st.spinner('Analyzing company data...'):
-            result = run_research(company_name, website)
+# When form is submitted
+if submit_button:
+    if company_name and company_website:
+        with st.spinner('Running analysis...'):
+            response = send_to_make_webhook(company_name, company_website)
             
-            if "error" in result:
-                st.error(result["error"])
-            else:
+            if response and 'text' in response:
                 st.success("Analysis Complete!")
                 
-                # Display sections
-                overview = result.get("data", {}).get("overview", "")
+                # Split the text into sections and display
+                text = response['text']
+                sections = text.split('##')
                 
-                # Company Overview
-                st.header("Company Overview")
-                if "Company Overview:" in overview:
-                    st.write(overview.split("Company Overview:")[1].split("Recent News:")[0].strip())
-                
-                # Recent News
-                st.header("Recent News")
-                if "Recent News:" in overview:
-                    st.write(overview.split("Recent News:")[1].split("Investment Analysis:")[0].strip())
-                
-                # Investment Analysis
-                st.header("Investment Analysis")
-                if "Investment Analysis:" in overview:
-                    st.write(overview.split("Investment Analysis:")[1].strip())
-                
-                # Competitors
-                st.header("Competitors")
-                competitors = result.get("data", {}).get("competitors", "").strip()
-                for comp in competitors.split(","):
-                    if comp.strip():
-                        st.markdown(f"• {comp.strip()}")
-
-st.markdown("---")
-st.markdown("Built with Streamlit & Make.com")
+                for section in sections:
+                    if section.strip():
+                        # Get the section title and content
+                        parts = section.strip().split('\n', 1)
+                        if len(parts) > 1:
+                            title = parts[0].strip(':')
+                            content = parts[1].strip()
+                            
+                            # Display each section
+                            st.subheader(title)
+                            st.write(content)
+    else:
+        st.warning("Please enter both Company Name and Website.")
