@@ -3,25 +3,38 @@ import requests
 import json
 
 def run_research(company_name, website):
-    # Replace this with your Make webhook URL once you have it
     WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
     
     try:
+        # Structure the payload as JSON
         payload = {
             "company_name": company_name,
             "website": website
         }
         
-        response = requests.post(WEBHOOK_URL, json=payload)
+        # Add headers to specify JSON content
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        # Make the request
+        response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
         
         if response.status_code == 200:
-            return response.json()
+            try:
+                # Try to parse the response as JSON
+                result = response.json()
+                return result
+            except json.JSONDecodeError:
+                # If it's not JSON, return the text
+                return {"error": "Invalid response format"}
         else:
             return {"error": f"Error: Status code {response.status_code}"}
             
     except Exception as e:
         return {"error": f"Error: {str(e)}"}
-      # Set page config
+
+# Set page config
 st.set_page_config(page_title="Company Research Assistant", layout="wide")
 
 # Main app header
@@ -49,15 +62,18 @@ if st.button("Run Research Analysis", type="primary"):
                 # Display results in an organized way
                 st.success("Analysis Complete!")
                 
-                # Create expandable sections for different types of information
+                # Create expandable sections for different parts of the analysis
                 with st.expander("Company Overview", expanded=True):
-                    st.write(results.get("overview", "No overview available"))
+                    st.write(results.get("Company Overview", "No overview available"))
                 
-                with st.expander("Market Analysis"):
-                    st.write(results.get("market_analysis", "No market analysis available"))
-                
-                with st.expander("Key Findings"):
-                    st.write(results.get("key_findings", "No key findings available"))
+                with st.expander("Recent News"):
+                    st.write(results.get("Recent News", "No news available"))
+                    
+                with st.expander("Investment Analysis"):
+                    st.write(results.get("Investment Analysis", "No analysis available"))
+                    
+                with st.expander("Competitors"):
+                    st.write(results.get("Competitors", "No competitors found"))
     else:
         st.warning("Please enter both company name and website.")
 
