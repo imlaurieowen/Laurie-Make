@@ -16,22 +16,27 @@ def run_research(company_name, website):
         }
         
         response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
+        
+        # Always return raw response for debugging
+        try:
+            data = response.json()
+        except:
+            data = None
+            
         return {
-            "status": response.status_code,
-            "text": response.text,
-            "data": response.json() if response.status_code == 200 else None
+            "status_code": response.status_code,
+            "raw_text": response.text,
+            "data": data
         }
             
     except Exception as e:
         return {"error": str(e)}
 
 st.set_page_config(page_title="Company Research Assistant", layout="wide")
-
 st.title("Company Research Assistant 🔍")
 st.markdown("---")
 
 col1, col2 = st.columns(2)
-
 with col1:
     company_name = st.text_input("Company Name", placeholder="Enter company name...")
 with col2:
@@ -40,28 +45,29 @@ with col2:
 if st.button("Run Research Analysis", type="primary"):
     if company_name and website:
         with st.spinner('Analyzing company data...'):
-            response = run_research(company_name, website)
+            result = run_research(company_name, website)
             
-            # Always show raw response when debugging
+            # Debug section
             with st.expander("Debug Information", expanded=True):
-                st.write("Status:", response.get("status"))
-                st.write("Raw Response:", response.get("text"))
-                if "error" in response:
-                    st.write("Error:", response["error"])
+                st.write("Status Code:", result.get("status_code"))
+                st.write("Raw Response Text:")
+                st.code(result.get("raw_text"))
                 
-            if response.get("data"):
+            if result.get("data"):
                 st.success("Analysis Complete!")
-                content = response["data"].get("data", "")
+                data = result["data"]
                 
-                # Display sections
-                sections = content.split("##")
-                for section in sections:
-                    if section.strip():
-                        title = section.split("\n")[0].strip(":")
-                        if title:
-                            with st.expander(title, expanded=True):
-                                content = "\n".join(section.split("\n")[1:]).strip()
-                                st.markdown(content)
+                with st.expander("Company Overview", expanded=True):
+                    st.markdown(data.get("Overview", "No overview available"))
+                    
+                with st.expander("Recent News"):
+                    st.markdown(data.get("News", "No news available"))
+                    
+                with st.expander("Competitors"):
+                    comp_text = data.get("Competitors", "")
+                    comp_list = [c.strip() for c in comp_text.split('\n') if c.strip()]
+                    for comp in comp_list:
+                        st.markdown(f"• {comp}")
     else:
         st.warning("Please enter both company name and website.")
 
