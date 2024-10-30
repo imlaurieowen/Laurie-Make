@@ -17,16 +17,10 @@ def run_research(company_name, website):
         
         response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
         
-        # Always return raw response for debugging
-        try:
-            data = response.json()
-        except:
-            data = None
-            
         return {
             "status_code": response.status_code,
             "raw_text": response.text,
-            "data": data
+            "data": response.json() if response.status_code == 200 else None
         }
             
     except Exception as e:
@@ -48,26 +42,41 @@ if st.button("Run Research Analysis", type="primary"):
             result = run_research(company_name, website)
             
             # Debug section
-            with st.expander("Debug Information", expanded=True):
+            with st.expander("Debug Information", expanded=False):
                 st.write("Status Code:", result.get("status_code"))
                 st.write("Raw Response Text:")
                 st.code(result.get("raw_text"))
-                
-            if result.get("data"):
-                st.success("Analysis Complete!")
-                data = result["data"]
-                
-                with st.expander("Company Overview", expanded=True):
-                    st.markdown(data.get("Overview", "No overview available"))
-                    
-                with st.expander("Recent News"):
-                    st.markdown(data.get("News", "No news available"))
-                    
-                with st.expander("Competitors"):
-                    comp_text = data.get("Competitors", "")
-                    comp_list = [c.strip() for c in comp_text.split('\n') if c.strip()]
-                    for comp in comp_list:
-                        st.markdown(f"• {comp}")
+            
+            try:
+                if result.get("raw_text"):
+                    # Try to clean and parse the response
+                    text = result["raw_text"].strip()
+                    if text.startswith('{') and text.endswith('}'):
+                        sections = text.split('##')
+                        
+                        st.success("Analysis Complete!")
+                        
+                        # Display sections
+                        for section in sections:
+                            section = section.strip()
+                            if section:
+                                if "Company Overview:" in section:
+                                    with st.expander("Company Overview", expanded=True):
+                                        st.markdown(section.replace("Company Overview:", "").strip())
+                                elif "Recent News:" in section:
+                                    with st.expander("Recent News", expanded=True):
+                                        st.markdown(section.replace("Recent News:", "").strip())
+                                elif "Investment Analysis:" in section:
+                                    with st.expander("Investment Analysis", expanded=True):
+                                        st.markdown(section.replace("Investment Analysis:", "").strip())
+                                elif "Competitors:" in section:
+                                    with st.expander("Competitors", expanded=True):
+                                        comp_text = section.replace("Competitors:", "").strip()
+                                        for comp in comp_text.split('\n'):
+                                            if comp.strip():
+                                                st.markdown(f"• {comp.strip()}")
+            except Exception as e:
+                st.error(f"Error processing response: {str(e)}")
     else:
         st.warning("Please enter both company name and website.")
 
