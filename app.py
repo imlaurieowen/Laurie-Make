@@ -92,14 +92,16 @@ if st.button("Run Research Analysis", type="primary"):
                                 st.markdown(part)
                     
                     # For debugging, show the raw response
-                    with st.expander("Debug - Raw Response", expanded=False):
-                        st.code(str(results))
-                        
-                except Exception as e:
-                    st.error(f"Error displaying results: {str(e)}")
-                    st.code(str(results))  # Show raw results for debugging
-    else:
-        st.warning("Please enter both company name and website.")
+                    # For debugging, show both raw response and processed parts
+with st.expander("Debug Information", expanded=True):
+    st.subheader("Raw Response")
+    st.code(str(results))
+    
+    st.subheader("Make.com Response")
+    st.code(response.text)
+    
+    st.subheader("Status Code")
+    st.code(response.status_code)
 
 st.markdown("---")
 st.markdown("Built with Streamlit & Make.com")
