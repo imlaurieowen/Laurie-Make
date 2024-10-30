@@ -3,7 +3,7 @@ import requests
 import json
 
 def run_research(company_name, website):
-    WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8dmpx1blpxlhqejut50"
+    WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
     
     try:
         payload = {
