@@ -3,7 +3,6 @@ import requests
 import json
 
 def run_research(company_name, website):
-    # Replace this with your actual webhook URL from Make.com
     WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
     
     try:
@@ -16,21 +15,12 @@ def run_research(company_name, website):
             "Content-Type": "application/json"
         }
         
-        # Add debug information
-        st.write("Sending request to:", WEBHOOK_URL)
-        st.write("Payload:", payload)
-        
         response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
-        
-        # Add response debugging
-        st.write("Response Status Code:", response.status_code)
-        st.write("Response Headers:", dict(response.headers))
         
         if response.status_code == 200:
             try:
                 # Parse the text response
                 result_text = response.text
-                st.write("Raw Response Text:", result_text)
                 
                 # Try to parse it as JSON
                 try:
@@ -76,14 +66,8 @@ if st.button("Run Research Analysis", type="primary"):
             
             if "error" in results:
                 st.error(results["error"])
-                
-                # Show debug information when there's an error
-                with st.expander("Debug Information", expanded=True):
-                    st.write("Company Name:", company_name)
-                    st.write("Website:", website)
-                    st.write("Error Details:", results["error"])
             else:
-            st.success("Analysis Complete!")
+                st.success("Analysis Complete!")
                 
                 # Display Company Name
                 st.header(results.get("Company Name", company_name))
@@ -92,26 +76,42 @@ if st.button("Run Research Analysis", type="primary"):
                 with st.expander("Company Overview", expanded=True):
                     overview = results.get("Overview", "")
                     if overview:
-                        # Split by sections
-                        sections = overview.split("##")
-                        for section in sections:
-                            if section.strip():
-                                st.markdown(f"## {section.strip()}")
+                        # Remove any ## from the start of the text
+                        if overview.startswith("##"):
+                            overview = overview.split("##")[1]
+                        st.markdown(overview)
                 
-                # Display Competitors as a clean list
-                with st.expander("Competitors"):
-                    competitors = results.get("Competitors", "")
-                    if isinstance(competitors, list):
-                        for comp in competitors:
-                            st.markdown(f"• {comp.strip()}")
+                # Display Recent News
+                with st.expander("Recent News"):
+                    # Try to extract Recent News section
+                    overview = results.get("Overview", "")
+                    if "Recent News:" in overview:
+                        news = overview.split("Recent News:")[1].split("Investment Analysis:")[0]
+                        st.markdown(news)
                     else:
-                        st.markdown(competitors)
+                        st.markdown("No recent news available")
                 
                 # Display Investment Analysis
                 with st.expander("Investment Analysis"):
-                    analysis = results.get("Investment Analysis", "")
-                    if analysis:
+                    # Try to extract Investment Analysis section
+                    overview = results.get("Overview", "")
+                    if "Investment Analysis:" in overview:
+                        analysis = overview.split("Investment Analysis:")[1]
                         st.markdown(analysis)
+                    else:
+                        st.markdown("No investment analysis available")
+                
+                # Display Competitors
+                with st.expander("Competitors"):
+                    competitors = results.get("Competitors", "")
+                    if competitors:
+                        # Clean up the competitors text and display as bullet points
+                        comp_list = competitors.replace("-", "•").split("\n")
+                        for comp in comp_list:
+                            if comp.strip():
+                                st.markdown(comp.strip())
+                    else:
+                        st.markdown("No competitors information available")
                 
                 # Debug Information
                 with st.expander("Debug Information", expanded=False):
