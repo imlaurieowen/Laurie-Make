@@ -3,6 +3,7 @@ import requests
 import json
 
 def run_research(company_name, website):
+    # Replace this with your actual webhook URL from Make.com
     WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
     
     try:
@@ -15,12 +16,22 @@ def run_research(company_name, website):
             "Content-Type": "application/json"
         }
         
+        # Add debug information
+        st.write("Sending request to:", WEBHOOK_URL)
+        st.write("Payload:", payload)
+        
         response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
+        
+        # Add response debugging
+        st.write("Response Status Code:", response.status_code)
+        st.write("Response Headers:", dict(response.headers))
         
         if response.status_code == 200:
             try:
                 # Parse the text response
                 result_text = response.text
+                st.write("Raw Response Text:", result_text)
+                
                 # Try to parse it as JSON
                 try:
                     result = json.loads(result_text)
@@ -34,7 +45,12 @@ def run_research(company_name, website):
             except Exception as e:
                 return {"error": f"Error processing response: {str(e)}"}
         else:
-            return {"error": f"Error: Status code {response.status_code}"}
+            if response.status_code == 404:
+                return {"error": "Webhook URL not found. Please check if the scenario is activated in Make.com"}
+            elif response.status_code == 500:
+                return {"error": "Server error in Make.com scenario. Check the scenario configuration."}
+            else:
+                return {"error": f"Error: Status code {response.status_code}. Response: {response.text}"}
             
     except Exception as e:
         return {"error": f"Error: {str(e)}"}
@@ -60,6 +76,12 @@ if st.button("Run Research Analysis", type="primary"):
             
             if "error" in results:
                 st.error(results["error"])
+                
+                # Show debug information when there's an error
+                with st.expander("Debug Information", expanded=True):
+                    st.write("Company Name:", company_name)
+                    st.write("Website:", website)
+                    st.write("Error Details:", results["error"])
             else:
                 st.success("Analysis Complete!")
                 
@@ -68,33 +90,16 @@ if st.button("Run Research Analysis", type="primary"):
                 
                 # Display Overview
                 with st.expander("Company Overview", expanded=True):
-                    st.markdown("### Company Overview")
-                    st.markdown(results.get("Overview", "No overview available").replace("\n", "\n\n"))
-                
-                # Display Recent News
-                with st.expander("Recent News"):
-                    st.markdown("### Recent News")
-                    if "Recent News:" in results.get("Overview", ""):
-                        news = results["Overview"].split("Recent News:")[1].split("Investment Analysis:")[0]
-                        st.markdown(news)
-                
-                # Display Investment Analysis
-                with st.expander("Investment Analysis"):
-                    st.markdown("### Investment Analysis")
-                    if "Investment Analysis:" in results.get("Overview", ""):
-                        analysis = results["Overview"].split("Investment Analysis:")[1]
-                        st.markdown(analysis)
+                    st.markdown(results.get("Overview", "No overview available"))
                 
                 # Display Competitors
                 with st.expander("Competitors"):
-                    st.markdown("### Key Competitors")
-                    competitors = results.get("Competitors", "No competitors found")
-                    st.markdown(competitors)
+                    st.markdown(results.get("Competitors", "No competitors information available"))
                 
-                # For debugging, show the raw response
+                # Debug Information
                 with st.expander("Debug Information", expanded=False):
                     st.subheader("Raw Response")
-                    st.code(str(results))
+                    st.json(results)
     else:
         st.warning("Please enter both company name and website.")
 
