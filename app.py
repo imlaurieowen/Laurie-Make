@@ -63,8 +63,41 @@ if st.button("Run Research Analysis", type="primary"):
             else:
                 st.success("Analysis Complete!")
                 
-                # Display the full analysis
-                st.markdown(results.get("Analysis", "No analysis available"))
+                try:
+                    # Attempt to parse the response as text
+                    analysis_text = results.get("Analysis", str(results))
+                    
+                    # Create expandable sections for each part of the analysis
+                    parts = analysis_text.split("\n\n")  # Split by double newlines
+                    
+                    for part in parts:
+                        if part.strip():  # Only process non-empty parts
+                            # Try to identify section headers
+                            if "Company Name:" in part:
+                                with st.expander("Company Details", expanded=True):
+                                    st.markdown(part)
+                            elif "Company Overview:" in part:
+                                with st.expander("Company Overview", expanded=True):
+                                    st.markdown(part)
+                            elif "Recent News:" in part:
+                                with st.expander("Recent News", expanded=True):
+                                    st.markdown(part)
+                            elif "Investment Analysis:" in part:
+                                with st.expander("Investment Analysis", expanded=True):
+                                    st.markdown(part)
+                            elif "Competitors:" in part:
+                                with st.expander("Competitors", expanded=True):
+                                    st.markdown(part)
+                            else:
+                                st.markdown(part)
+                    
+                    # For debugging, show the raw response
+                    with st.expander("Debug - Raw Response", expanded=False):
+                        st.code(str(results))
+                        
+                except Exception as e:
+                    st.error(f"Error displaying results: {str(e)}")
+                    st.code(str(results))  # Show raw results for debugging
     else:
         st.warning("Please enter both company name and website.")
 
