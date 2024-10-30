@@ -19,10 +19,13 @@ def run_research(company_name, website):
         
         if response.status_code == 200:
             try:
+                # Parse the text response
                 result_text = response.text
+                # Try to parse it as JSON
                 try:
                     result = json.loads(result_text)
                 except json.JSONDecodeError:
+                    # If it's not JSON, treat it as text
                     result = {
                         "Company Name": company_name,
                         "Analysis": result_text
@@ -38,23 +41,6 @@ def run_research(company_name, website):
 
 # Set page config
 st.set_page_config(page_title="Company Research Assistant", layout="wide")
-
-# Custom CSS for better formatting
-st.markdown("""
-    <style>
-    .header-text {
-        color: #1E88E5;
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-    .section-text {
-        font-size: 16px;
-        line-height: 1.6;
-        margin-bottom: 15px;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 st.title("Company Research Assistant 🔍")
 st.markdown("---")
@@ -77,46 +63,38 @@ if st.button("Run Research Analysis", type="primary"):
             else:
                 st.success("Analysis Complete!")
                 
-                # Company Overview Section
+                # Display Company Name
+                st.header(results.get("Company Name", company_name))
+                
+                # Display Overview
                 with st.expander("Company Overview", expanded=True):
-                    if "Overview" in results:
-                        sections = results["Overview"].split("\n\n")
-                        for section in sections:
-                            if section.strip():
-                                if ":" in section:
-                                    title, content = section.split(":", 1)
-                                    st.markdown(f"**{title.strip()}:**")
-                                    st.markdown(content.strip())
-                                else:
-                                    st.markdown(section.strip())
+                    st.markdown("### Company Overview")
+                    st.markdown(results.get("Overview", "No overview available").replace("\n", "\n\n"))
                 
-                # Recent News Section
+                # Display Recent News
                 with st.expander("Recent News"):
-                    if "Recent News" in results["Overview"]:
-                        news_section = results["Overview"].split("Recent News:")[1].split("Investment Analysis:")[0]
-                        st.markdown(news_section.strip())
+                    st.markdown("### Recent News")
+                    if "Recent News:" in results.get("Overview", ""):
+                        news = results["Overview"].split("Recent News:")[1].split("Investment Analysis:")[0]
+                        st.markdown(news)
                 
-                # Investment Analysis Section
+                # Display Investment Analysis
                 with st.expander("Investment Analysis"):
-                    if "Investment Analysis" in results["Overview"]:
-                        analysis_section = results["Overview"].split("Investment Analysis:")[1]
-                        st.markdown(analysis_section.strip())
+                    st.markdown("### Investment Analysis")
+                    if "Investment Analysis:" in results.get("Overview", ""):
+                        analysis = results["Overview"].split("Investment Analysis:")[1]
+                        st.markdown(analysis)
                 
-                # Competitors Section
+                # Display Competitors
                 with st.expander("Competitors"):
-                    if "Competitors" in results:
-                        competitors = results["Competitors"]
-                        # Clean up and format competitors list
-                        if isinstance(competitors, str):
-                            competitor_list = competitors.split(",")
-                            for competitor in competitor_list:
-                                st.markdown(f"• {competitor.strip()}")
+                    st.markdown("### Key Competitors")
+                    competitors = results.get("Competitors", "No competitors found")
+                    st.markdown(competitors)
                 
-                # Debug Information (hidden by default)
+                # For debugging, show the raw response
                 with st.expander("Debug Information", expanded=False):
                     st.subheader("Raw Response")
                     st.code(str(results))
-
     else:
         st.warning("Please enter both company name and website.")
 
