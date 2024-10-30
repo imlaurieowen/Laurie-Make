@@ -83,18 +83,35 @@ if st.button("Run Research Analysis", type="primary"):
                     st.write("Website:", website)
                     st.write("Error Details:", results["error"])
             else:
-                st.success("Analysis Complete!")
+            st.success("Analysis Complete!")
                 
                 # Display Company Name
                 st.header(results.get("Company Name", company_name))
                 
                 # Display Overview
                 with st.expander("Company Overview", expanded=True):
-                    st.markdown(results.get("Overview", "No overview available"))
+                    overview = results.get("Overview", "")
+                    if overview:
+                        # Split by sections
+                        sections = overview.split("##")
+                        for section in sections:
+                            if section.strip():
+                                st.markdown(f"## {section.strip()}")
                 
-                # Display Competitors
+                # Display Competitors as a clean list
                 with st.expander("Competitors"):
-                    st.markdown(results.get("Competitors", "No competitors information available"))
+                    competitors = results.get("Competitors", "")
+                    if isinstance(competitors, list):
+                        for comp in competitors:
+                            st.markdown(f"• {comp.strip()}")
+                    else:
+                        st.markdown(competitors)
+                
+                # Display Investment Analysis
+                with st.expander("Investment Analysis"):
+                    analysis = results.get("Investment Analysis", "")
+                    if analysis:
+                        st.markdown(analysis)
                 
                 # Debug Information
                 with st.expander("Debug Information", expanded=False):
