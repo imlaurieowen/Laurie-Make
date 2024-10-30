@@ -18,7 +18,15 @@ def run_research(company_name, website):
         response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
         
         if response.status_code == 200:
-            return response.json()
+            try:
+                result = response.json()
+            except json.JSONDecodeError:
+                # If JSON parsing fails, return the raw text for debugging
+                return {
+                    "error": "JSON parsing error",
+                    "raw_response": response.text
+                }
+            return result
         else:
             return {"error": f"Error: Status code {response.status_code}"}
             
@@ -46,6 +54,10 @@ if st.button("Run Research Analysis", type="primary"):
             
             if "error" in results:
                 st.error(results["error"])
+                if "raw_response" in results:
+                    with st.expander("Debug Information", expanded=True):
+                        st.text("Raw Response:")
+                        st.code(results["raw_response"])
             else:
                 st.success("Analysis Complete!")
                 
@@ -85,7 +97,7 @@ if st.button("Run Research Analysis", type="primary"):
                 with st.expander("Competitors"):
                     competitors = results.get("competitors", "")
                     if competitors:
-                        comp_list = [c.strip() for c in competitors.split(',') if c.strip()]
+                        comp_list = [c.strip() for c in competitors.split('\n') if c.strip() and not c.strip().startswith('-')]
                         for comp in comp_list:
                             st.markdown(f"• {comp}")
                     else:
@@ -93,7 +105,10 @@ if st.button("Run Research Analysis", type="primary"):
                 
                 # Debug
                 with st.expander("Debug Information", expanded=False):
+                    st.subheader("Raw Response")
                     st.json(results)
+                    st.subheader("Response Text")
+                    st.code(response.text)
     else:
         st.warning("Please enter both company name and website.")
 
