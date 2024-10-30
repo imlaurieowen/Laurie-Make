@@ -3,7 +3,7 @@ import requests
 import json
 
 def run_research(company_name, website):
-    WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
+    WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8dmpx1blpxlhqejut50"
     
     try:
         payload = {
@@ -63,45 +63,32 @@ if st.button("Run Research Analysis", type="primary"):
             else:
                 st.success("Analysis Complete!")
                 
-                try:
-                    # Attempt to parse the response as text
-                    analysis_text = results.get("Analysis", str(results))
+                # Display Company Name
+                st.header(results.get("Company Name", company_name))
+                
+                # Display Overview
+                with st.expander("Company Overview", expanded=True):
+                    st.markdown(results.get("Overview", "No overview available"))
+                
+                # Display Competitors
+                with st.expander("Competitors"):
+                    st.markdown(results.get("Competitors", "No competitors information available"))
+                
+                # For debugging, show both raw response and processed parts
+                with st.expander("Debug Information", expanded=False):
+                    st.subheader("Raw Response")
+                    st.code(str(results))
                     
-                    # Create expandable sections for each part of the analysis
-                    parts = analysis_text.split("\n\n")  # Split by double newlines
+                    st.subheader("Response Status")
+                    st.code(f"Status Code: {response.status_code}")
                     
-                    for part in parts:
-                        if part.strip():  # Only process non-empty parts
-                            # Try to identify section headers
-                            if "Company Name:" in part:
-                                with st.expander("Company Details", expanded=True):
-                                    st.markdown(part)
-                            elif "Company Overview:" in part:
-                                with st.expander("Company Overview", expanded=True):
-                                    st.markdown(part)
-                            elif "Recent News:" in part:
-                                with st.expander("Recent News", expanded=True):
-                                    st.markdown(part)
-                            elif "Investment Analysis:" in part:
-                                with st.expander("Investment Analysis", expanded=True):
-                                    st.markdown(part)
-                            elif "Competitors:" in part:
-                                with st.expander("Competitors", expanded=True):
-                                    st.markdown(part)
-                            else:
-                                st.markdown(part)
+                    st.subheader("Headers")
+                    st.json(dict(response.headers))
                     
-                    # For debugging, show the raw response
-                    # For debugging, show both raw response and processed parts
-with st.expander("Debug Information", expanded=True):
-    st.subheader("Raw Response")
-    st.code(str(results))
-    
-    st.subheader("Make.com Response")
-    st.code(response.text)
-    
-    st.subheader("Status Code")
-    st.code(response.status_code)
+                    st.subheader("Full Response Text")
+                    st.code(response.text)
+    else:
+        st.warning("Please enter both company name and website.")
 
 st.markdown("---")
 st.markdown("Built with Streamlit & Make.com")
