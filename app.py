@@ -3,6 +3,7 @@ import requests
 import json
 
 def run_research(company_name, website):
+    # Replace this with your actual webhook URL from Make.com
     WEBHOOK_URL = "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50"
     
     try:
@@ -15,68 +16,90 @@ def run_research(company_name, website):
             "Content-Type": "application/json"
         }
         
+        # Add debug information
+        st.write("Sending request to:", WEBHOOK_URL)
+        st.write("Payload:", payload)
+        
         response = requests.post(WEBHOOK_URL, json=payload, headers=headers)
         
-        return {
-            "status_code": response.status_code,
-            "raw_text": response.text,
-            "data": response.json() if response.status_code == 200 else None
-        }
+        # Add response debugging
+        st.write("Response Status Code:", response.status_code)
+        st.write("Response Headers:", dict(response.headers))
+        
+        if response.status_code == 200:
+            try:
+                # Parse the text response
+                result_text = response.text
+                st.write("Raw Response Text:", result_text)
+                
+                # Try to parse it as JSON
+                try:
+                    result = json.loads(result_text)
+                except json.JSONDecodeError:
+                    # If it's not JSON, treat it as text
+                    result = {
+                        "Company Name": company_name,
+                        "Analysis": result_text
+                    }
+                return result
+            except Exception as e:
+                return {"error": f"Error processing response: {str(e)}"}
+        else:
+            if response.status_code == 404:
+                return {"error": "Webhook URL not found. Please check if the scenario is activated in Make.com"}
+            elif response.status_code == 500:
+                return {"error": "Server error in Make.com scenario. Check the scenario configuration."}
+            else:
+                return {"error": f"Error: Status code {response.status_code}. Response: {response.text}"}
             
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Error: {str(e)}"}
 
+# Set page config
 st.set_page_config(page_title="Company Research Assistant", layout="wide")
+
 st.title("Company Research Assistant 🔍")
 st.markdown("---")
 
 col1, col2 = st.columns(2)
+
 with col1:
     company_name = st.text_input("Company Name", placeholder="Enter company name...")
+    
 with col2:
     website = st.text_input("Website", placeholder="Enter company website...")
 
 if st.button("Run Research Analysis", type="primary"):
     if company_name and website:
         with st.spinner('Analyzing company data...'):
-            result = run_research(company_name, website)
+            results = run_research(company_name, website)
             
-            # Debug section
-            with st.expander("Debug Information", expanded=False):
-                st.write("Status Code:", result.get("status_code"))
-                st.write("Raw Response Text:")
-                st.code(result.get("raw_text"))
-            
-            try:
-                if result.get("raw_text"):
-                    # Try to clean and parse the response
-                    text = result["raw_text"].strip()
-                    if text.startswith('{') and text.endswith('}'):
-                        sections = text.split('##')
-                        
-                        st.success("Analysis Complete!")
-                        
-                        # Display sections
-                        for section in sections:
-                            section = section.strip()
-                            if section:
-                                if "Company Overview:" in section:
-                                    with st.expander("Company Overview", expanded=True):
-                                        st.markdown(section.replace("Company Overview:", "").strip())
-                                elif "Recent News:" in section:
-                                    with st.expander("Recent News", expanded=True):
-                                        st.markdown(section.replace("Recent News:", "").strip())
-                                elif "Investment Analysis:" in section:
-                                    with st.expander("Investment Analysis", expanded=True):
-                                        st.markdown(section.replace("Investment Analysis:", "").strip())
-                                elif "Competitors:" in section:
-                                    with st.expander("Competitors", expanded=True):
-                                        comp_text = section.replace("Competitors:", "").strip()
-                                        for comp in comp_text.split('\n'):
-                                            if comp.strip():
-                                                st.markdown(f"• {comp.strip()}")
-            except Exception as e:
-                st.error(f"Error processing response: {str(e)}")
+            if "error" in results:
+                st.error(results["error"])
+                
+                # Show debug information when there's an error
+                with st.expander("Debug Information", expanded=True):
+                    st.write("Company Name:", company_name)
+                    st.write("Website:", website)
+                    st.write("Error Details:", results["error"])
+            else:
+                st.success("Analysis Complete!")
+                
+                # Display Company Name
+                st.header(results.get("Company Name", company_name))
+                
+                # Display Overview
+                with st.expander("Company Overview", expanded=True):
+                    st.markdown(results.get("Overview", "No overview available"))
+                
+                # Display Competitors
+                with st.expander("Competitors"):
+                    st.markdown(results.get("Competitors", "No competitors information available"))
+                
+                # Debug Information
+                with st.expander("Debug Information", expanded=False):
+                    st.subheader("Raw Response")
+                    st.json(results)
     else:
         st.warning("Please enter both company name and website.")
 
