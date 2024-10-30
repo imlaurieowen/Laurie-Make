@@ -11,19 +11,29 @@ if st.button("Run Research Analysis"):
         try:
             response = requests.post(
                 "https://hook.eu2.make.com/wxfp1tgeko8o8odmpx1blpxlhqejut50",
-                json={"company_name": company_name, "website": company_website}
+                json={
+                    "company_name": company_name, 
+                    "website": company_website
+                }
             )
             
-            # Display raw response for debugging
-            st.code(response.text)
+            # Process the text response directly
+            text = response.text
+            sections = text.split('##')
             
-            # Process response if successful
-            if response.status_code == 200:
-                text = response.text
-                if text:
-                    sections = text.split('##')
-                    for section in sections:
-                        if section.strip():
-                            st.markdown(section)
+            for section in sections:
+                if section.strip():
+                    # Get title and content
+                    parts = section.split('\n', 1)
+                    if len(parts) > 1:
+                        title = parts[0].strip()
+                        content = parts[1].strip()
+                        # Display
+                        st.subheader(title)
+                        st.write(content)
+                        
         except Exception as e:
             st.error(f"Error: {str(e)}")
+            st.code(response.text)  # Show raw response for debugging
+    else:
+        st.warning("Please enter both Company Name and Website.")
